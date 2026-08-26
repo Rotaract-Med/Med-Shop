@@ -41,7 +41,9 @@ const colorVariantOptions = [
   { label: 'White', value: 'white' },
 ]
 
-const globals: GlobalSlug[] = ['header', 'footer']
+// Literal tuple, not GlobalSlug[]: a widened union makes `updateGlobal`
+// resolve `data` to only the fields every global shares.
+const globals = ['header', 'footer'] as const
 
 const baseAddressUSData: Transaction['billingAddress'] = {
   title: 'Dr.',

@@ -35,7 +35,6 @@ const dirname = path.dirname(filename)
 
 export default buildConfig({
   admin: {
-    css: path.resolve(dirname, 'src/styles/admin.css'),
     components: {
       beforeLogin: ['@/components/BeforeLogin#BeforeLogin'],
       beforeDashboard: ['@/components/BeforeDashboard#BeforeDashboard'],

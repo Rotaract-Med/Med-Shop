@@ -20,7 +20,15 @@ import { DeleteItemButton } from './DeleteItemButton'
 import { EditItemQuantityButton } from './EditItemQuantityButton'
 import { OpenCartButton } from './OpenCart'
 import { Button } from '@/components/ui/button'
-import { Product } from '@/payload-types'
+import { Product, Variant } from '@/payload-types'
+
+/**
+ * The cart's product/variant come back loosely typed from the plugin, so these
+ * name the element types the callbacks below actually receive.
+ */
+type GalleryItem = NonNullable<Product['gallery']>[number]
+type VariantOptionRef = NonNullable<Variant['options']>[number]
+
 
 export function CartModal() {
   const { cart } = useCart()
@@ -118,14 +126,14 @@ export function CartModal() {
                 if (isVariant) {
                   price = variant?.priceInUSD
 
-                  const imageVariant = product.gallery?.find((galleryItem) => {
+                  const imageVariant = product.gallery?.find((galleryItem: GalleryItem) => {
                     if (!galleryItem.variantOption) return false
                     const variantOptionID =
                       typeof galleryItem.variantOption === 'object'
                         ? galleryItem.variantOption.id
                         : galleryItem.variantOption
 
-                    const hasMatch = variant?.options?.some((option) => {
+                    const hasMatch = variant?.options?.some((option: VariantOptionRef) => {
                       if (typeof option === 'object') return option.id === variantOptionID
                       else return option === variantOptionID
                     })
@@ -176,7 +184,7 @@ export function CartModal() {
                       {isVariant && variant ? (
                         <p className="text-xs text-muted-foreground capitalize mt-0.5">
                           {variant.options
-                            ?.map((option) => {
+                            ?.map((option: VariantOptionRef) => {
                               if (typeof option === 'object') return option.label
                               return null
                             })

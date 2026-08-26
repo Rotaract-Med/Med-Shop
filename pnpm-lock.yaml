@@ -5,7 +5,10 @@ settings:
   excludeLinksFromLockfile: false
 
 onlyBuiltDependencies:
+  - esbuild
   - sharp
+  - unrs-resolver
+  - workerd
 
 patchedDependencies:
   '@payloadcms/plugin-ecommerce@3.86.0':
@@ -5414,6 +5417,7 @@ packages:
     resolution: {integrity: sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA==}
     engines: {node: '>=12'}
     hasBin: true
+    requiresBuild: true
     optionalDependencies:
       '@esbuild/android-arm': 0.18.20
       '@esbuild/android-arm64': 0.18.20
@@ -5443,6 +5447,7 @@ packages:
     resolution: {integrity: sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg==}
     engines: {node: '>=18'}
     hasBin: true
+    requiresBuild: true
     optionalDependencies:
       '@esbuild/aix-ppc64': 0.25.12
       '@esbuild/android-arm': 0.25.12
@@ -5476,6 +5481,7 @@ packages:
     resolution: {integrity: sha512-HrJrvZv5ayxBzPfwphOoNzkzOIIlifzk0KJrGK2c8R4+LKpMtpYLQeUdjnwjWv/LZlkH2laZk+4w78pi99D4Vw==}
     engines: {node: '>=18'}
     hasBin: true
+    requiresBuild: true
     optionalDependencies:
       '@esbuild/aix-ppc64': 0.28.1
       '@esbuild/android-arm': 0.28.1
@@ -9164,6 +9170,7 @@ packages:
 
   /unrs-resolver@1.12.2:
     resolution: {integrity: sha512-dmlRxBJJayXjqTwC+JtF1HhJmgf3ftQ3YejFcZrf4+KKtJv0qDsK1pjqaaVjG7wJ5NJ6UVP1OqRMQ71Z4C3rxQ==}
+    requiresBuild: true
     dependencies:
       napi-postinstall: 0.3.4
     optionalDependencies:

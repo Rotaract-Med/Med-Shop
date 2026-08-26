@@ -103,7 +103,10 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "sharp"
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "workerd"
     ],
     "patchedDependencies": {
       "@payloadcms/plugin-ecommerce@3.86.0": "patches/@payloadcms__plugin-ecommerce@3.86.0.patch"
