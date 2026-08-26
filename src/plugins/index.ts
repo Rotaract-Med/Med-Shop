@@ -4,6 +4,7 @@ import { Plugin } from 'payload'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { ecommercePlugin } from '@payloadcms/plugin-ecommerce'
+import { s3Storage } from '@payloadcms/storage-s3'
 
 import { stripeAdapter } from '@payloadcms/plugin-ecommerce/payments/stripe'
 import { codAdapter } from '@wtree/payload-ecommerce-cod'
@@ -33,7 +34,41 @@ const generateURL: GenerateURL<Product | Page> = ({ doc }) => {
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
 
+/**
+ * Uploads are stored in MinIO (S3-compatible) rather than on the local disk.
+ *
+ * Vercel's filesystem is ephemeral and `public/media` is gitignored, so
+ * disk-backed uploads vanish on every deploy — leaving media rows in the
+ * database pointing at files that no longer exist.
+ *
+ * Only enabled when a bucket is configured, so a checkout without S3
+ * credentials still runs against the local filesystem.
+ */
+const storagePlugins: Plugin[] = process.env.S3_BUCKET
+  ? [
+      s3Storage({
+        bucket: process.env.S3_BUCKET,
+        collections: {
+          media: true,
+        },
+        config: {
+          credentials: {
+            accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+          },
+          endpoint: process.env.S3_ENDPOINT,
+          // MinIO serves buckets as a path (`host/bucket/key`), not as a
+          // subdomain (`bucket.host`) the way AWS does. Without this the SDK
+          // builds unreachable hostnames.
+          forcePathStyle: true,
+          region: process.env.S3_REGION || 'us-east-1',
+        },
+      }),
+    ]
+  : []
+
 export const plugins: Plugin[] = [
+  ...storagePlugins,
   seoPlugin({
     generateTitle,
     generateURL,
