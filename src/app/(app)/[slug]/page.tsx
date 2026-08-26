@@ -11,23 +11,36 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 
 export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const pages = await payload.find({
-    collection: 'pages',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
+  // Prerendering is an optimisation, not a requirement: if the database is
+  // unreachable during the build, fall back to rendering pages on demand
+  // instead of failing the whole deploy.
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const pages = await payload.find({
+      collection: 'pages',
+      draft: false,
+      limit: 1000,
+      overrideAccess: false,
+      pagination: false,
+      select: {
+        slug: true,
+      },
+    })
 
-  // Every page slug is a real path now that the storefront owns `/` — there is
-  // no longer a `home` slug that gets served from the root instead.
-  return pages.docs?.map(({ slug }) => {
-    return { slug }
-  })
+    // Every page slug is a real path now that the storefront owns `/` — there
+    // is no longer a `home` slug that gets served from the root instead.
+    return pages.docs?.map(({ slug }) => {
+      return { slug }
+    })
+  } catch (err) {
+    console.warn(
+      `[build] Could not reach the database to prerender pages; they will render on demand. ${
+        err instanceof Error ? err.message : ''
+      }`,
+    )
+
+    return []
+  }
 }
 
 type Args = {

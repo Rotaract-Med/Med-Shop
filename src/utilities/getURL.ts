@@ -1,17 +1,20 @@
 import { canUseDOM } from './canUseDOM'
 
 export const getServerSideURL = () => {
-  let url = process.env.NEXT_PUBLIC_SERVER_URL
+  const configured = process.env.NEXT_PUBLIC_SERVER_URL
+  const vercelURL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined
 
-  if (!url && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  }
+  // A localhost value left behind in a deployed environment is always a
+  // mistake: it yields unreachable links in emails and broken OG images. When
+  // we can tell we are deployed, prefer the real host over it.
+  const configuredIsLocal = Boolean(configured && /localhost|127\.0\.0\.1/.test(configured))
 
-  if (!url) {
-    url = 'http://localhost:3000'
-  }
+  if (configured && !(configuredIsLocal && vercelURL)) return configured
+  if (vercelURL) return vercelURL
 
-  return url
+  return 'http://localhost:3000'
 }
 
 export const getClientSideURL = () => {

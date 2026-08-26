@@ -1,5 +1,6 @@
 'use client'
 
+import { getClientSideURL } from '@/utilities/getURL'
 import { Message } from '@/components/Message'
 import { Button } from '@/components/ui/button'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
@@ -36,7 +37,7 @@ export const CheckoutForm: React.FC<Props> = ({
 
       if (stripe && elements) {
         try {
-          const returnUrl = `${process.env.NEXT_PUBLIC_SERVER_URL}/checkout/confirm-order${customerEmail ? `?email=${customerEmail}` : ''}`
+          const returnUrl = `${getClientSideURL()}/checkout/confirm-order${customerEmail ? `?email=${customerEmail}` : ''}`
 
           const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
             confirmParams: {

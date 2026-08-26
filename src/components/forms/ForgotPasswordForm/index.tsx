@@ -1,5 +1,6 @@
 'use client'
 
+import { getClientSideURL } from '@/utilities/getURL'
 import { FormError } from '@/components/forms/FormError'
 import { FormItem } from '@/components/forms/FormItem'
 import { Message } from '@/components/Message'
@@ -26,7 +27,7 @@ export const ForgotPasswordForm: React.FC = () => {
 
   const onSubmit = useCallback(async (data: FormData) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/forgot-password`,
+      `${getClientSideURL()}/api/users/forgot-password`,
       {
         body: JSON.stringify(data),
         headers: {
