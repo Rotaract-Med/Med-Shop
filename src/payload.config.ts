@@ -43,8 +43,23 @@ export default buildConfig({
   },
   collections: [Users, Pages, Categories, Media, Events],
   db: postgresAdapter({
+    // Tuned for serverless: each function instance gets its own pool, so the
+    // defaults (10 connections held open per instance) exhaust Postgres under
+    // even light concurrency.
     pool: {
       connectionString: process.env.DATABASE_URL || '',
+      // Small enough that many concurrent instances cannot saturate the server,
+      // large enough for the parallel queries a single page render issues.
+      max: 5,
+      // Frozen lambdas should not sit on idle connections.
+      idleTimeoutMillis: 10_000,
+      // A cold start has to complete TCP, auth and TLS before the first query.
+      // The default 0 (no timeout) turns a slow connect into a hung request;
+      // anything too tight turns it into an intermittent 500.
+      connectionTimeoutMillis: 15_000,
+      // Let the process exit once connections go idle instead of holding the
+      // instance open.
+      allowExitOnIdle: true,
     },
   }),
   editor: lexicalEditor({

@@ -6,9 +6,9 @@ export const BeforeLogin: React.FC = () => {
       <p>
         <b>Rotaract Méditerranéen Shop — Admin Panel.</b>
         {' Customers should '}
-        <a href={`${process.env.PAYLOAD_PUBLIC_SERVER_URL}/login`}>
-          log in at the storefront
-        </a>
+        {/* Relative on purpose: the storefront is served from this same origin,
+            so no environment variable is needed to build the link. */}
+        <a href="/login">log in at the storefront</a>
         {' to access their orders and account.'}
       </p>
     </div>
