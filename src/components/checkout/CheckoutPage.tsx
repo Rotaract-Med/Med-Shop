@@ -25,11 +25,35 @@ import { AddressItem } from '@/components/addresses/AddressItem'
 import { FormItem } from '@/components/forms/FormItem'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
+import {
+  type CheckoutEvent,
+  type CheckoutPaymentOption,
+  PaymentMethodSelector,
+} from '@/components/checkout/PaymentMethodSelector'
+import { ReceiptUpload } from '@/components/checkout/ReceiptUpload'
+import { calculateDeliveryFee } from '@/utilities/deliveryFee'
+import type { DeliverySetting } from '@/payload-types'
 
 const apiKey = `${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}`
 const stripe = loadStripe(apiKey)
 
-export const CheckoutPage: React.FC = () => {
+type Props = {
+  deliverySettings: DeliverySetting | null
+  eventFieldLabel: string
+  events: CheckoutEvent[]
+  noEventsMessage: string
+  paymentHeading: string
+  paymentOptions: CheckoutPaymentOption[]
+}
+
+export const CheckoutPage: React.FC<Props> = ({
+  deliverySettings,
+  eventFieldLabel,
+  events,
+  noEventsMessage,
+  paymentHeading,
+  paymentOptions,
+}) => {
   const { user } = useAuth()
   const router = useRouter()
   const { cart } = useCart()
@@ -41,7 +65,18 @@ export const CheckoutPage: React.FC = () => {
   const [email, setEmail] = useState('')
   const [emailEditable, setEmailEditable] = useState(true)
   const [paymentData, setPaymentData] = useState<null | Record<string, unknown>>(null)
-  const { initiatePayment } = usePayments()
+  const { confirmOrder, initiatePayment } = usePayments()
+  const [selectedMethod, setSelectedMethod] = useState<CheckoutPaymentOption['name'] | null>(
+    paymentOptions[0]?.name ?? null,
+  )
+  const [selectedEventID, setSelectedEventID] = useState<null | number>(null)
+  const [placedOrder, setPlacedOrder] = useState<null | {
+    accessToken?: string
+    id: number | string
+    message: string
+    method: CheckoutPaymentOption['name']
+    reference?: string
+  }>(null)
   const { addresses } = useAddresses()
   const [shippingAddress, setShippingAddress] = useState<Partial<Address>>()
   const [billingAddress, setBillingAddress] = useState<Partial<Address>>()
@@ -104,6 +139,151 @@ export const CheckoutPage: React.FC = () => {
     },
     [billingAddress, billingAddressSameAsShipping, shippingAddress],
   )
+
+  /**
+   * Methods that take no money online (cash on delivery, pay at an event)
+   * initiate and confirm back-to-back, producing the order immediately.
+   */
+  const placeDirectOrder = useCallback(
+    async (methodName: CheckoutPaymentOption['name']) => {
+      setProcessingPayment(true)
+      setError(null)
+
+      const addressData = {
+        ...(email ? { customerEmail: email } : {}),
+        billingAddress,
+        shippingAddress: billingAddressSameAsShipping ? billingAddress : shippingAddress,
+      }
+
+      try {
+        const initiated = (await initiatePayment(methodName, {
+          additionalData: addressData,
+        })) as Record<string, unknown>
+
+        // Each adapter hands back its own reference for the pending
+        // transaction: `reference` for pay-at-event, `orderID` for COD.
+        const confirmData: Record<string, unknown> =
+          methodName === 'payAtEvent'
+            ? { eventID: selectedEventID, reference: initiated?.reference }
+            : methodName === 'bankTransfer'
+              ? { reference: initiated?.reference }
+              : { orderID: initiated?.orderID }
+
+        const confirmed = (await confirmOrder(methodName, {
+          additionalData: { ...confirmData, ...(email ? { customerEmail: email } : {}) },
+        })) as {
+          accessToken?: string
+          message?: string
+          orderID: number | string
+          reference?: string
+        }
+
+        setPlacedOrder({
+          accessToken: confirmed.accessToken,
+          id: confirmed.orderID,
+          message: confirmed.message ?? 'Your order has been placed.',
+          method: methodName,
+          reference: confirmed.reference,
+        })
+        toast.success('Order placed.')
+      } catch (err) {
+        // The plugin throws with the raw response body, which is JSON for
+        // adapter errors and plain text otherwise.
+        let message = 'We could not place your order. Please try again.'
+
+        if (err instanceof Error) {
+          try {
+            const parsed = JSON.parse(err.message)
+            message = parsed?.message ?? parsed?.error ?? message
+          } catch {
+            if (err.message) message = err.message
+          }
+        }
+
+        setError(message)
+        toast.error(message)
+      } finally {
+        setProcessingPayment(false)
+      }
+    },
+    [
+      billingAddress,
+      billingAddressSameAsShipping,
+      confirmOrder,
+      email,
+      initiatePayment,
+      selectedEventID,
+      shippingAddress,
+    ],
+  )
+
+  const activeOption = paymentOptions.find((option) => option.name === selectedMethod) ?? null
+  const needsEvent = Boolean(activeOption?.requiresEvent)
+
+  const shippingCountry = (billingAddressSameAsShipping ? billingAddress : shippingAddress)?.country
+  const itemsSubtotal = cart?.subtotal ?? 0
+
+  // Event collection is never shipped, so it is never charged delivery.
+  const deliveryFee = activeOption?.skipsDelivery
+    ? 0
+    : calculateDeliveryFee(deliverySettings, {
+        countryCode: shippingCountry,
+        itemsSubtotal,
+      })
+
+  const orderTotal = itemsSubtotal + deliveryFee
+  const canPlaceOrder = canGoToPayment && Boolean(selectedMethod) && (!needsEvent || Boolean(selectedEventID))
+
+  if (placedOrder) {
+    const orderLink = placedOrder.accessToken
+      ? `/orders/${placedOrder.id}?email=${encodeURIComponent(email || user?.email || '')}&accessToken=${placedOrder.accessToken}`
+      : `/orders/${placedOrder.id}`
+
+    return (
+      <div className="prose dark:prose-invert w-full max-w-none py-16 text-center">
+        <h2>Thank you — your order is confirmed</h2>
+        <p>{placedOrder.message}</p>
+        <p>
+          Your order number is <strong>#{placedOrder.id}</strong>. We have emailed your
+          confirmation and a link to view it.
+        </p>
+
+        {placedOrder.method === 'bankTransfer' ? (
+          <div className="not-prose mx-auto mt-8 max-w-md text-left">
+            {placedOrder.reference ? (
+              <p className="mb-4 rounded-lg bg-muted/60 p-4 text-sm">
+                Quote this reference on your transfer:{' '}
+                <strong className="font-mono">{placedOrder.reference}</strong>
+              </p>
+            ) : null}
+            <ReceiptUpload
+              accessToken={placedOrder.accessToken}
+              orderID={placedOrder.id}
+            />
+          </div>
+        ) : null}
+
+        {/* A durable way back. Guests get a tokenised link they can bookmark,
+            so closing this tab does not strand them — the confirmation email
+            carries the same link, but this does not depend on email working. */}
+        <div className="not-prose mx-auto mt-8 flex max-w-md flex-col items-center gap-3">
+          <Button asChild>
+            <Link href={orderLink}>View your order</Link>
+          </Button>
+
+          {!user ? (
+            <p className="text-sm text-muted-foreground">
+              Bookmark that link to come back to this order. You can also{' '}
+              <Link className="underline" href="/find-order">
+                find your order
+              </Link>{' '}
+              later using your order number and email.
+            </p>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
 
   if (!stripe) return null
 
@@ -270,16 +450,43 @@ export const CheckoutPage: React.FC = () => {
         )}
 
         {!paymentData && (
-          <Button
-            className="self-start"
-            disabled={!canGoToPayment}
-            onClick={(e) => {
-              e.preventDefault()
-              void initiatePaymentIntent('stripe')
-            }}
-          >
-            Go to payment
-          </Button>
+          <>
+            <PaymentMethodSelector
+              disabled={!canGoToPayment || isProcessingPayment}
+              eventFieldLabel={eventFieldLabel}
+              events={events}
+              heading={paymentHeading}
+              noEventsMessage={noEventsMessage}
+              onSelectEvent={setSelectedEventID}
+              onSelectMethod={(name) => {
+                setSelectedMethod(name)
+                setError(null)
+              }}
+              options={paymentOptions}
+              selectedEventID={selectedEventID}
+              selectedMethod={selectedMethod}
+            />
+
+            <Button
+              className="self-start"
+              disabled={!canPlaceOrder || isProcessingPayment}
+              onClick={(e) => {
+                e.preventDefault()
+
+                if (selectedMethod === 'stripe') {
+                  void initiatePaymentIntent('stripe')
+                } else if (selectedMethod) {
+                  void placeDirectOrder(selectedMethod)
+                }
+              }}
+            >
+              {isProcessingPayment
+                ? 'Placing order…'
+                : selectedMethod === 'stripe'
+                  ? 'Go to payment'
+                  : 'Place order'}
+            </Button>
+          </>
         )}
 
         {!paymentData?.['clientSecret'] && error && (
@@ -307,19 +514,19 @@ export const CheckoutPage: React.FC = () => {
               <Elements
                 options={{
                   appearance: {
-                    theme: 'stripe',
+                    theme: theme === 'dark' ? 'night' : 'stripe',
                     variables: {
                       borderRadius: '6px',
-                      colorPrimary: '#858585',
+                      colorPrimary: theme === 'dark' ? '#a0a0a0' : '#858585',
                       gridColumnSpacing: '20px',
                       gridRowSpacing: '20px',
-                      colorBackground: theme === 'dark' ? '#0a0a0a' : cssVariables.colors.base0,
+                      colorBackground: theme === 'dark' ? '#1a1a1a' : cssVariables.colors.base0,
                       colorDanger: cssVariables.colors.error500,
                       colorDangerText: cssVariables.colors.error500,
                       colorIcon:
                         theme === 'dark' ? cssVariables.colors.base0 : cssVariables.colors.base1000,
-                      colorText: theme === 'dark' ? '#858585' : cssVariables.colors.base1000,
-                      colorTextPlaceholder: '#858585',
+                      colorText: theme === 'dark' ? '#e0e0e0' : cssVariables.colors.base1000,
+                      colorTextPlaceholder: theme === 'dark' ? '#6b6b6b' : '#858585',
                       fontFamily: 'Geist, sans-serif',
                       fontSizeBase: '16px',
                       fontWeightBold: '600',
@@ -429,9 +636,39 @@ export const CheckoutPage: React.FC = () => {
             return null
           })}
           <hr />
+
+          <div className="flex justify-between items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <Price amount={itemsSubtotal} />
+          </div>
+
+          {activeOption?.skipsDelivery ? (
+            <p className="text-sm text-muted-foreground">
+              {deliverySettings?.eventNotice ||
+                'No delivery charge — you collect your order at the event.'}
+            </p>
+          ) : (
+            <div className="flex justify-between items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                {deliverySettings?.label || 'Delivery'}
+              </span>
+              {deliveryFee > 0 ? (
+                <Price amount={deliveryFee} />
+              ) : (
+                <span className="font-medium text-success">Free</span>
+              )}
+            </div>
+          )}
+
+          {!activeOption?.skipsDelivery && deliverySettings?.notice ? (
+            <p className="text-xs text-muted-foreground">{deliverySettings.notice}</p>
+          ) : null}
+
+          <hr />
+
           <div className="flex justify-between items-center gap-2">
             <span className="uppercase">Total</span>{' '}
-            <Price className="text-3xl font-medium" amount={cart.subtotal || 0} />
+            <Price className="text-3xl font-medium" amount={orderTotal} />
           </div>
         </div>
       )}

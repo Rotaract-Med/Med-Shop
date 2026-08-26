@@ -1,6 +1,7 @@
 import { CallToAction } from '@/blocks/CallToAction/config'
 import { Content } from '@/blocks/Content/config'
 import { MediaBlock } from '@/blocks/MediaBlock/config'
+import { iconSelect } from '@/fields/iconSelect'
 import { slugField } from 'payload'
 import { generatePreviewPath } from '@/utilities/generatePreviewPath'
 import { CollectionOverride } from '@payloadcms/plugin-ecommerce/types'
@@ -52,6 +53,9 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
     priceInUSD: true,
     inventory: true,
     meta: true,
+    categories: true,
+    featured: true,
+    merchandising: true,
   },
   fields: [
     { name: 'title', type: 'text', required: true },
@@ -60,6 +64,86 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
       tabs: [
         {
           fields: [
+            {
+              name: 'merchandising',
+              type: 'group',
+              admin: {
+                description: 'Controls how this product presents itself in the shop grid.',
+              },
+              fields: [
+                {
+                  name: 'shortDescription',
+                  type: 'text',
+                  admin: {
+                    description:
+                      'One line shown under the title on the product card. Keep it under ~60 characters.',
+                  },
+                  maxLength: 120,
+                },
+                {
+                  name: 'badge',
+                  type: 'group',
+                  fields: [
+                    {
+                      type: 'row',
+                      fields: [
+                        {
+                          name: 'label',
+                          type: 'text',
+                          admin: {
+                            description: 'Leave empty for no badge.',
+                            placeholder: 'New in',
+                            width: '50%',
+                          },
+                        },
+                        {
+                          name: 'tone',
+                          type: 'select',
+                          admin: {
+                            condition: (_, siblingData) => Boolean(siblingData?.label),
+                            width: '50%',
+                          },
+                          defaultValue: 'azure',
+                          options: [
+                            { label: 'Azure', value: 'azure' },
+                            { label: 'Cranberry', value: 'cranberry' },
+                            { label: 'Gold', value: 'gold' },
+                            { label: 'Ink', value: 'ink' },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                  label: 'Card badge',
+                },
+                {
+                  name: 'highlights',
+                  type: 'array',
+                  admin: {
+                    description:
+                      'Short selling points. Shown on the product card when the card has room.',
+                    initCollapsed: true,
+                  },
+                  fields: [
+                    {
+                      type: 'row',
+                      fields: [
+                        iconSelect({ admin: { width: '40%' }, defaultValue: 'badgeCheck' }),
+                        {
+                          name: 'label',
+                          type: 'text',
+                          admin: { width: '60%' },
+                          required: true,
+                        },
+                      ],
+                    },
+                  ],
+                  labels: { plural: 'Highlights', singular: 'Highlight' },
+                  maxRows: 3,
+                },
+              ],
+              label: 'Shop presentation',
+            },
             {
               name: 'description',
               type: 'richText',
@@ -206,6 +290,17 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
       },
       hasMany: true,
       relationTo: 'categories',
+    },
+    {
+      name: 'featured',
+      type: 'checkbox',
+      admin: {
+        description: 'Featured products take a double-width slot in the shop grid.',
+        position: 'sidebar',
+      },
+      defaultValue: false,
+      index: true,
+      label: 'Feature in shop grid',
     },
     slugField(),
   ],

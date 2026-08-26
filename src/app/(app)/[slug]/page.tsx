@@ -6,10 +6,8 @@ import { generateMeta } from '@/utilities/generateMeta'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
-import { homeStaticData } from '@/endpoints/seed/home-static'
 import React from 'react'
 
-import type { Page } from '@/payload-types'
 import { notFound } from 'next/navigation'
 
 export async function generateStaticParams() {
@@ -25,15 +23,11 @@ export async function generateStaticParams() {
     },
   })
 
-  const params = pages.docs
-    ?.filter((doc) => {
-      return doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug }
-    })
-
-  return params
+  // Every page slug is a real path now that the storefront owns `/` — there is
+  // no longer a `home` slug that gets served from the root instead.
+  return pages.docs?.map(({ slug }) => {
+    return { slug }
+  })
 }
 
 type Args = {
@@ -46,14 +40,9 @@ export default async function Page({ params }: Args) {
   const { slug = 'home' } = await params
   const url = '/' + slug
 
-  let page = await queryPageBySlug({
+  const page = await queryPageBySlug({
     slug,
   })
-
-  // Remove this code once your website is seeded
-  if (!page && slug === 'home') {
-    page = homeStaticData() as Page
-  }
 
   if (!page) {
     return notFound()

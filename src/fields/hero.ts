@@ -39,6 +39,14 @@ export const hero: Field = {
       required: true,
     },
     {
+      name: 'tagline',
+      type: 'text',
+      label: 'Tagline (eyebrow label above heading)',
+      admin: {
+        description: 'Short line displayed above the main heading, e.g. "Official Rotaract Méditerranéen Store"',
+      },
+    },
+    {
       name: 'richText',
       type: 'richText',
       editor: lexicalEditor({

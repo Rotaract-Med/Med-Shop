@@ -1,7 +1,10 @@
 import { AuthProvider } from '@/providers/Auth'
 import { EcommerceProvider } from '@payloadcms/plugin-ecommerce/client/react'
 import { stripeAdapterClient } from '@payloadcms/plugin-ecommerce/payments/stripe'
+import { codAdapterClient } from '@wtree/payload-ecommerce-cod'
 import React from 'react'
+
+import { bankTransferAdapterClient, payAtEventAdapterClient } from '@/payments/clients'
 
 import { HeaderThemeProvider } from './HeaderTheme'
 import { ThemeProvider } from './Theme'
@@ -34,10 +37,18 @@ export const Providers: React.FC<{
                 },
               },
             }}
+            /**
+             * Must mirror the server adapters in `@/plugins`. A method missing
+             * here fails at the client with "Payment method with ID … not
+             * found", regardless of Payment Settings.
+             */
             paymentMethods={[
               stripeAdapterClient({
                 publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
               }),
+              bankTransferAdapterClient(),
+              payAtEventAdapterClient(),
+              codAdapterClient({ label: 'Cash on Delivery' }),
             ]}
           >
             {children}

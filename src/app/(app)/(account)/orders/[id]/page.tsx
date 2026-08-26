@@ -14,6 +14,7 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { OrderStatus } from '@/components/OrderStatus'
 import { AddressItem } from '@/components/addresses/AddressItem'
+import { ReceiptUpload } from '@/components/checkout/ReceiptUpload'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,6 +84,13 @@ export default async function Order({ params, searchParams }: PageProps) {
         createdAt: true,
         updatedAt: true,
         shippingAddress: true,
+        // Without these the bank-transfer panel and delivery line silently
+        // never render: `select` returns only the fields listed here.
+        deliveryFee: true,
+        event: true,
+        paymentReceipt: true,
+        paymentReference: true,
+        paymentVerified: true,
       },
     })
 
@@ -156,6 +164,33 @@ export default async function Order({ params, searchParams }: PageProps) {
             </div>
           )}
         </div>
+
+        {typeof order.deliveryFee === 'number' && order.deliveryFee > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Includes <Price as="span" amount={order.deliveryFee} /> delivery.
+          </p>
+        ) : null}
+
+        {/* Bank transfer: show the reference and let the customer attach proof
+            of payment until it has been verified. */}
+        {order.paymentReference ? (
+          <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
+            <div>
+              <p className="font-mono uppercase text-primary/50 mb-1 text-sm">Payment reference</p>
+              <p className="font-mono text-lg">{order.paymentReference}</p>
+            </div>
+
+            {order.paymentVerified ? (
+              <p className="text-sm text-success">Payment verified — thank you.</p>
+            ) : (
+              <ReceiptUpload
+                accessToken={accessToken || undefined}
+                initiallyUploaded={Boolean(order.paymentReceipt)}
+                orderID={order.id}
+              />
+            )}
+          </div>
+        ) : null}
 
         {order.items && (
           <div>

@@ -1,0 +1,12 @@
+diff --git a/dist/payments/adapters/stripe/initiatePayment.js b/dist/payments/adapters/stripe/initiatePayment.js
+--- a/dist/payments/adapters/stripe/initiatePayment.js
++++ b/dist/payments/adapters/stripe/initiatePayment.js
+@@ -47,7 +47,7 @@
+                 const variantID = item.variant ? typeof item.variant === 'object' ? item.variant.id : item.variant : undefined;
+                 // Preserve any additional custom properties (e.g., deliveryOption, customizations)
+                 // that may have been added via cartItemMatcher
+-                const { product: _product, variant: _variant, ...customProperties } = item;
++                const { id: _id, product: _product, variant: _variant, ...customProperties } = item;
+                 return {
+                     ...customProperties,
+                     product: productID,

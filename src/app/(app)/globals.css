@@ -3,7 +3,7 @@
 
 @config '../../../tailwind.config.mjs';
 
-@custom-variant dark (&:is([data-theme='dark'] *));
+@custom-variant dark (&:is(.dark-never *)); /* dark mode disabled — always white */
 @custom-variant sm (@media (width >= theme(--breakpoint-sm)));
 @custom-variant md (@media (width >= theme(--breakpoint-md)));
 @custom-variant lg (@media (width >= theme(--breakpoint-lg)));
@@ -44,7 +44,7 @@
   --breakpoint-xl: 80rem;
   --breakpoint-2xl: 86rem;
   --font-mono: var(--font-geist-mono);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-nunito-sans);
 }
 
 @layer utilities {
@@ -88,80 +88,49 @@
 
 :root {
   --background: oklch(100% 0 0deg);
-  --foreground: oklch(14.5% 0 0deg);
-  --card: oklch(96.5% 0.005 265deg);
-  --card-foreground: oklch(14.5% 0 0deg);
+  --foreground: oklch(13% 0.01 265deg);
+  --card: oklch(97% 0.005 255deg);
+  --card-foreground: oklch(13% 0.01 265deg);
   --popover: oklch(100% 0 0deg);
-  --popover-foreground: oklch(14.5% 0 0deg);
-  --primary: oklch(20.5% 0 0deg);
-  --primary-foreground: oklch(98.5% 0 0deg);
-  --secondary: oklch(97% 0 0deg);
-  --secondary-foreground: oklch(20.5% 0 0deg);
-  --muted: oklch(97% 0 0deg);
-  --muted-foreground: oklch(55.6% 0 0deg);
-  --accent: oklch(97% 0 0deg);
-  --accent-foreground: oklch(20.5% 0 0deg);
+  --popover-foreground: oklch(13% 0.01 265deg);
+  --primary: oklch(38.2% 0.154 255deg);         /* Rotaract azure blue #0050a2 */
+  --primary-foreground: oklch(100% 0 0deg);
+  --secondary: oklch(51.5% 0.221 351deg);       /* Rotaract cranberry #d41367 */
+  --secondary-foreground: oklch(100% 0 0deg);
+  --muted: oklch(96% 0.005 255deg);
+  --muted-foreground: oklch(55% 0.02 255deg);
+  --accent: oklch(78.8% 0.174 80deg);           /* Rotaract gold #f7a81b */
+  --accent-foreground: oklch(20% 0 0deg);
   --destructive: oklch(57.7% 0.245 27.325deg);
   --destructive-foreground: oklch(57.7% 0.245 27.325deg);
-  --border: oklch(92.2% 0 0deg);
-  --input: oklch(92.2% 0 0deg);
-  --ring: oklch(70.8% 0 0deg);
-  --chart-1: oklch(64.6% 0.222 41.116deg);
-  --chart-2: oklch(60% 0.118 184.704deg);
-  --chart-3: oklch(39.8% 0.07 227.392deg);
-  --chart-4: oklch(82.8% 0.189 84.429deg);
-  --chart-5: oklch(76.9% 0.188 70.08deg);
+  --border: oklch(88% 0.01 255deg);
+  --input: oklch(88% 0.01 255deg);
+  --ring: oklch(38.2% 0.154 255deg);            /* azure focus ring */
+  --chart-1: oklch(38.2% 0.154 255deg);         /* azure */
+  --chart-2: oklch(51.5% 0.221 351deg);         /* cranberry */
+  --chart-3: oklch(63.2% 0.144 218deg);         /* sky blue */
+  --chart-4: oklch(78.8% 0.174 80deg);          /* gold */
+  --chart-5: oklch(22.8% 0.126 265deg);         /* royal blue */
   --radius: 0.625rem;
-  --sidebar: oklch(98.5% 0 0deg);
-  --sidebar-foreground: oklch(14.5% 0 0deg);
-  --sidebar-primary: oklch(20.5% 0 0deg);
-  --sidebar-primary-foreground: oklch(98.5% 0 0deg);
-  --sidebar-accent: oklch(97% 0 0deg);
-  --sidebar-accent-foreground: oklch(20.5% 0 0deg);
-  --sidebar-border: oklch(92.2% 0 0deg);
-  --sidebar-ring: oklch(70.8% 0 0deg);
-  --success: oklch(78% 0.08 200deg);
-  --warning: oklch(89% 0.1 75deg);
-  --error: oklch(75% 0.15 25deg);
+  --sidebar: oklch(97% 0.005 255deg);
+  --sidebar-foreground: oklch(13% 0.01 265deg);
+  --sidebar-primary: oklch(38.2% 0.154 255deg); /* azure */
+  --sidebar-primary-foreground: oklch(100% 0 0deg);
+  --sidebar-accent: oklch(92% 0.01 255deg);
+  --sidebar-accent-foreground: oklch(13% 0.01 265deg);
+  --sidebar-border: oklch(88% 0.01 255deg);
+  --sidebar-ring: oklch(38.2% 0.154 255deg);
+  --success: oklch(55% 0.16 145deg);
+  --warning: oklch(75% 0.15 75deg);
+  --error: oklch(57.7% 0.245 27.325deg);
+  --brand-deep: oklch(22.8% 0.126 265deg);      /* royal blue — hero/footer grounds */
+  --brand-sky: oklch(63.2% 0.144 218deg);       /* sky blue — gradient midpoint */
+
+  /* Height of the sticky site header (ribbon + nav) at md and up.
+     The shop toolbar sticks directly beneath it. */
+  --header-height: 6rem;
 }
 
-[data-theme='dark'] {
-  --background: oklch(14.5% 0 0deg);
-  --foreground: oklch(98.5% 0 0deg);
-  --card: oklch(17% 0 0deg);
-  --card-foreground: oklch(98.5% 0 0deg);
-  --popover: oklch(14.5% 0 0deg);
-  --popover-foreground: oklch(98.5% 0 0deg);
-  --primary: oklch(98.5% 0 0deg);
-  --primary-foreground: oklch(20.5% 0 0deg);
-  --secondary: oklch(26.9% 0 0deg);
-  --secondary-foreground: oklch(98.5% 0 0deg);
-  --muted: oklch(26.9% 0 0deg);
-  --muted-foreground: oklch(70.8% 0 0deg);
-  --accent: oklch(26.9% 0 0deg);
-  --accent-foreground: oklch(98.5% 0 0deg);
-  --destructive: oklch(39.6% 0.141 25.723deg);
-  --destructive-foreground: oklch(63.7% 0.237 25.331deg);
-  --border: oklch(26.9% 0 0deg);
-  --input: oklch(26.9% 0 0deg);
-  --ring: oklch(43.9% 0 0deg);
-  --chart-1: oklch(48.8% 0.243 264.376deg);
-  --chart-2: oklch(69.6% 0.17 162.48deg);
-  --chart-3: oklch(76.9% 0.188 70.08deg);
-  --chart-4: oklch(62.7% 0.265 303.9deg);
-  --chart-5: oklch(64.5% 0.246 16.439deg);
-  --sidebar: oklch(20.5% 0 0deg);
-  --sidebar-foreground: oklch(98.5% 0 0deg);
-  --sidebar-primary: oklch(48.8% 0.243 264.376deg);
-  --sidebar-primary-foreground: oklch(98.5% 0 0deg);
-  --sidebar-accent: oklch(26.9% 0 0deg);
-  --sidebar-accent-foreground: oklch(98.5% 0 0deg);
-  --sidebar-border: oklch(26.9% 0 0deg);
-  --sidebar-ring: oklch(43.9% 0 0deg);
-  --success: oklch(28% 0.1 200deg);
-  --warning: oklch(35% 0.08 70deg);
-  --error: oklch(45% 0.1 25deg);
-}
 
 @theme inline {
   --color-background: var(--background);
@@ -203,6 +172,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-sky: var(--brand-sky);
 }
 
 @layer base {
@@ -211,6 +182,9 @@
   }
   body {
     @apply bg-background text-foreground min-h-[100vh] flex flex-col;
+  }
+  a {
+    @apply transition-colors;
   }
 }
 
@@ -227,4 +201,26 @@ a,
 input,
 button {
   @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-50 dark:focus-visible:ring-neutral-600 dark:focus-visible:ring-offset-neutral-900;
+}
+
+/* Hide the scrollbar on horizontally scrollable rails (category pills) while
+   keeping the element scrollable by wheel, touch and keyboard. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

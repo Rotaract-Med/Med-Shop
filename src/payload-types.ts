@@ -76,6 +76,7 @@ export interface Config {
     pages: Page;
     categories: Category;
     media: Media;
+    events: Event;
     forms: Form;
     'form-submissions': FormSubmission;
     addresses: Address;
@@ -109,6 +110,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     addresses: AddressesSelect<false> | AddressesSelect<true>;
@@ -125,16 +127,24 @@ export interface Config {
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
   globals: {
     header: Header;
     footer: Footer;
+    shopSettings: ShopSetting;
+    paymentSettings: PaymentSetting;
+    deliverySettings: DeliverySetting;
+    emailSettings: EmailSetting;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    shopSettings: ShopSettingsSelect<false> | ShopSettingsSelect<true>;
+    paymentSettings: PaymentSettingsSelect<false> | PaymentSettingsSelect<true>;
+    deliverySettings: DeliverySettingsSelect<false> | DeliverySettingsSelect<true>;
+    emailSettings: EmailSettingsSelect<false> | EmailSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -185,21 +195,21 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   name?: string | null;
   roles?: ('admin' | 'customer')[] | null;
   orders?: {
-    docs?: (string | Order)[];
+    docs?: (number | Order)[];
     hasNextPage?: boolean;
     totalDocs?: number;
   };
   cart?: {
-    docs?: (string | Cart)[];
+    docs?: (number | Cart)[];
     hasNextPage?: boolean;
     totalDocs?: number;
   };
   addresses?: {
-    docs?: (string | Address)[];
+    docs?: (number | Address)[];
     hasNextPage?: boolean;
     totalDocs?: number;
   };
@@ -227,11 +237,11 @@ export interface User {
  * via the `definition` "orders".
  */
 export interface Order {
-  id: string;
+  id: number;
   items?:
     | {
-        product?: (string | null) | Product;
-        variant?: (string | null) | Variant;
+        product?: (number | null) | Product;
+        variant?: (number | null) | Variant;
         quantity: number;
         id?: string | null;
       }[]
@@ -249,12 +259,32 @@ export interface Order {
     country?: string | null;
     phone?: string | null;
   };
-  customer?: (string | null) | User;
+  customer?: (number | null) | User;
   customerEmail?: string | null;
-  transactions?: (string | Transaction)[] | null;
+  transactions?: (number | Transaction)[] | null;
   status?: OrderStatus;
   amount?: number | null;
   currency?: 'USD' | null;
+  /**
+   * In cents, already included in the order amount. Zero for orders collected at an event.
+   */
+  deliveryFee?: number | null;
+  /**
+   * Reference the customer quotes on their bank transfer.
+   */
+  paymentReference?: string | null;
+  /**
+   * Proof of payment uploaded by the customer.
+   */
+  paymentReceipt?: (number | null) | Media;
+  /**
+   * Tick once the funds have been confirmed in the bank account.
+   */
+  paymentVerified?: boolean | null;
+  /**
+   * Set when the customer chose to pay and collect at an event. Filter by this to see who is collecting where.
+   */
+  event?: (number | null) | Event;
   accessToken?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -264,8 +294,68 @@ export interface Order {
  * via the `definition` "products".
  */
 export interface Product {
-  id: string;
+  id: number;
   title: string;
+  /**
+   * Controls how this product presents itself in the shop grid.
+   */
+  merchandising?: {
+    /**
+     * One line shown under the title on the product card. Keep it under ~60 characters.
+     */
+    shortDescription?: string | null;
+    badge?: {
+      /**
+       * Leave empty for no badge.
+       */
+      label?: string | null;
+      tone?: ('azure' | 'cranberry' | 'gold' | 'ink') | null;
+    };
+    /**
+     * Short selling points. Shown on the product card when the card has room.
+     */
+    highlights?:
+      | {
+          /**
+           * Rendered as an SVG icon on the storefront.
+           */
+          icon?:
+            | (
+                | 'truck'
+                | 'ship'
+                | 'plane'
+                | 'globe'
+                | 'mapPin'
+                | 'shield'
+                | 'badgeCheck'
+                | 'lock'
+                | 'creditCard'
+                | 'refresh'
+                | 'clock'
+                | 'users'
+                | 'handshake'
+                | 'heart'
+                | 'sparkles'
+                | 'flame'
+                | 'star'
+                | 'award'
+                | 'crown'
+                | 'gift'
+                | 'tag'
+                | 'percent'
+                | 'package'
+                | 'shirt'
+                | 'leaf'
+                | 'recycle'
+                | 'graduationCap'
+                | 'book'
+              )
+            | null;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
   description?: {
     root: {
       type: string;
@@ -283,32 +373,36 @@ export interface Product {
   } | null;
   gallery?:
     | {
-        image: string | Media;
-        variantOption?: (string | null) | VariantOption;
+        image: number | Media;
+        variantOption?: (number | null) | VariantOption;
         id?: string | null;
       }[]
     | null;
   layout?: (CallToActionBlock | ContentBlock | MediaBlock)[] | null;
   inventory?: number | null;
   enableVariants?: boolean | null;
-  variantTypes?: (string | VariantType)[] | null;
+  variantTypes?: (number | VariantType)[] | null;
   variants?: {
-    docs?: (string | Variant)[];
+    docs?: (number | Variant)[];
     hasNextPage?: boolean;
     totalDocs?: number;
   };
   priceInUSDEnabled?: boolean | null;
   priceInUSD?: number | null;
-  relatedProducts?: (string | Product)[] | null;
+  relatedProducts?: (number | Product)[] | null;
   meta?: {
     title?: string | null;
     /**
      * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
      */
-    image?: (string | null) | Media;
+    image?: (number | null) | Media;
     description?: string | null;
   };
-  categories?: (string | Category)[] | null;
+  categories?: (number | Category)[] | null;
+  /**
+   * Featured products take a double-width slot in the shop grid.
+   */
+  featured?: boolean | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -324,7 +418,7 @@ export interface Product {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   caption?: {
     root: {
@@ -358,9 +452,9 @@ export interface Media {
  * via the `definition` "variantOptions".
  */
 export interface VariantOption {
-  id: string;
+  id: number;
   _variantOptions_options_order?: string | null;
-  variantType: string | VariantType;
+  variantType: number | VariantType;
   label: string;
   /**
    * should be defaulted or dynamic based on label
@@ -375,11 +469,11 @@ export interface VariantOption {
  * via the `definition` "variantTypes".
  */
 export interface VariantType {
-  id: string;
+  id: number;
   label: string;
   name: string;
   options?: {
-    docs?: (string | VariantOption)[];
+    docs?: (number | VariantOption)[];
     hasNextPage?: boolean;
     totalDocs?: number;
   };
@@ -414,7 +508,7 @@ export interface CallToActionBlock {
           newTab?: boolean | null;
           reference?: {
             relationTo: 'pages';
-            value: string | Page;
+            value: number | Page;
           } | null;
           url?: string | null;
           label: string;
@@ -435,11 +529,15 @@ export interface CallToActionBlock {
  * via the `definition` "pages".
  */
 export interface Page {
-  id: string;
+  id: number;
   title: string;
   publishedOn?: string | null;
   hero: {
     type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
+    /**
+     * Short line displayed above the main heading, e.g. "Official Rotaract Méditerranéen Store"
+     */
+    tagline?: string | null;
     richText?: {
       root: {
         type: string;
@@ -462,7 +560,7 @@ export interface Page {
             newTab?: boolean | null;
             reference?: {
               relationTo: 'pages';
-              value: string | Page;
+              value: number | Page;
             } | null;
             url?: string | null;
             label: string;
@@ -474,11 +572,12 @@ export interface Page {
           id?: string | null;
         }[]
       | null;
-    media?: (string | null) | Media;
+    media?: (number | null) | Media;
   };
   layout: (
     | CallToActionBlock
     | ContentBlock
+    | FeaturesBlock
     | MediaBlock
     | ArchiveBlock
     | CarouselBlock
@@ -491,7 +590,7 @@ export interface Page {
     /**
      * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
      */
-    image?: (string | null) | Media;
+    image?: (number | null) | Media;
     description?: string | null;
   };
   /**
@@ -532,7 +631,7 @@ export interface ContentBlock {
           newTab?: boolean | null;
           reference?: {
             relationTo: 'pages';
-            value: string | Page;
+            value: number | Page;
           } | null;
           url?: string | null;
           label: string;
@@ -550,10 +649,29 @@ export interface ContentBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FeaturesBlock".
+ */
+export interface FeaturesBlock {
+  heading?: string | null;
+  subtitle?: string | null;
+  features?:
+    | {
+        icon?: ('globe' | 'shield' | 'truck' | 'users' | 'star' | 'package' | 'award' | 'heart') | null;
+        title: string;
+        description: string;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'features';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "MediaBlock".
  */
 export interface MediaBlock {
-  media: string | Media;
+  media: number | Media;
   id?: string | null;
   blockName?: string | null;
   blockType: 'mediaBlock';
@@ -580,12 +698,12 @@ export interface ArchiveBlock {
   } | null;
   populateBy?: ('collection' | 'selection') | null;
   relationTo?: 'products' | null;
-  categories?: (string | Category)[] | null;
+  categories?: (number | Category)[] | null;
   limit?: number | null;
   selectedDocs?:
     | {
         relationTo: 'products';
-        value: string | Product;
+        value: number | Product;
       }[]
     | null;
   id?: string | null;
@@ -597,13 +715,52 @@ export interface ArchiveBlock {
  * via the `definition` "categories".
  */
 export interface Category {
-  id: string;
+  id: number;
   title: string;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
   slug: string;
+  /**
+   * Shown on the category filter pill in the shop.
+   */
+  icon?:
+    | (
+        | 'truck'
+        | 'ship'
+        | 'plane'
+        | 'globe'
+        | 'mapPin'
+        | 'shield'
+        | 'badgeCheck'
+        | 'lock'
+        | 'creditCard'
+        | 'refresh'
+        | 'clock'
+        | 'users'
+        | 'handshake'
+        | 'heart'
+        | 'sparkles'
+        | 'flame'
+        | 'star'
+        | 'award'
+        | 'crown'
+        | 'gift'
+        | 'tag'
+        | 'percent'
+        | 'package'
+        | 'shirt'
+        | 'leaf'
+        | 'recycle'
+        | 'graduationCap'
+        | 'book'
+      )
+    | null;
+  /**
+   * Optional. Displayed under the shop heading when this category is selected.
+   */
+  description?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -614,12 +771,12 @@ export interface Category {
 export interface CarouselBlock {
   populateBy?: ('collection' | 'selection') | null;
   relationTo?: 'products' | null;
-  categories?: (string | Category)[] | null;
+  categories?: (number | Category)[] | null;
   limit?: number | null;
   selectedDocs?:
     | {
         relationTo: 'products';
-        value: string | Product;
+        value: number | Product;
       }[]
     | null;
   /**
@@ -628,7 +785,7 @@ export interface CarouselBlock {
   populatedDocs?:
     | {
         relationTo: 'products';
-        value: string | Product;
+        value: number | Product;
       }[]
     | null;
   /**
@@ -644,7 +801,7 @@ export interface CarouselBlock {
  * via the `definition` "ThreeItemGridBlock".
  */
 export interface ThreeItemGridBlock {
-  products?: (string | Product)[] | null;
+  products?: (number | Product)[] | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'threeItemGrid';
@@ -679,7 +836,7 @@ export interface BannerBlock {
  * via the `definition` "FormBlock".
  */
 export interface FormBlock {
-  form: string | Form;
+  form: number | Form;
   enableIntro?: boolean | null;
   introContent?: {
     root: {
@@ -705,7 +862,7 @@ export interface FormBlock {
  * via the `definition` "forms".
  */
 export interface Form {
-  id: string;
+  id: number;
   title: string;
   fields?:
     | (
@@ -817,9 +974,6 @@ export interface Form {
       )[]
     | null;
   submitButtonLabel?: string | null;
-  /**
-   * Choose whether to display an on-page message or redirect to a different page after they submit the form.
-   */
   confirmationType?: ('message' | 'redirect') | null;
   confirmationMessage?: {
     root: {
@@ -839,9 +993,6 @@ export interface Form {
   redirect?: {
     url: string;
   };
-  /**
-   * Send custom emails when the form submits. Use comma separated lists to send the same email to multiple recipients. To reference a value from this form, wrap that field's name with double curly brackets, i.e. {{firstName}}. You can use a wildcard {{*}} to output all data and {{*:table}} to format it as an HTML table in the email.
-   */
   emails?:
     | {
         emailTo?: string | null;
@@ -850,9 +1001,6 @@ export interface Form {
         replyTo?: string | null;
         emailFrom?: string | null;
         subject: string;
-        /**
-         * Enter the message that should be sent in this email.
-         */
         message?: {
           root: {
             type: string;
@@ -879,13 +1027,13 @@ export interface Form {
  * via the `definition` "variants".
  */
 export interface Variant {
-  id: string;
+  id: number;
   /**
    * Used for administrative purposes, not shown to customers. This is populated by default.
    */
   title?: string | null;
-  product: string | Product;
-  options: (string | VariantOption)[];
+  product: number | Product;
+  options: (number | VariantOption)[];
   inventory?: number | null;
   priceInUSDEnabled?: boolean | null;
   priceInUSD?: number | null;
@@ -899,19 +1047,40 @@ export interface Variant {
  * via the `definition` "transactions".
  */
 export interface Transaction {
-  id: string;
+  id: number;
   items?:
     | {
-        product?: (string | null) | Product;
-        variant?: (string | null) | Variant;
+        product?: (number | null) | Product;
+        variant?: (number | null) | Variant;
         quantity: number;
         id?: string | null;
       }[]
     | null;
-  paymentMethod?: 'stripe' | null;
+  paymentMethod?: ('stripe' | 'bankTransfer' | 'payAtEvent' | 'cod') | null;
   stripe?: {
     customerID?: string | null;
     paymentIntentID?: string | null;
+  };
+  bankTransfer?: {
+    reference?: string | null;
+    /**
+     * Tick once you have confirmed the funds arrived in the bank account.
+     */
+    paymentVerified?: boolean | null;
+    verifiedAt?: string | null;
+  };
+  payAtEvent?: {
+    reference?: string | null;
+    event?: (number | null) | Event;
+    paymentCollected?: boolean | null;
+    collectedAt?: string | null;
+  };
+  cod?: {
+    orderID?: string | null;
+    validationStatus?: ('pending' | 'validated' | 'rejected') | null;
+    deliveryStatus?: ('preparing' | 'dispatched' | 'out_for_delivery' | 'delivered' | 'returned') | null;
+    paymentCollected?: boolean | null;
+    collectionDate?: string | null;
   };
   billingAddress?: {
     title?: string | null;
@@ -927,31 +1096,70 @@ export interface Transaction {
     phone?: string | null;
   };
   status: 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired' | 'refunded';
-  customer?: (string | null) | User;
+  customer?: (number | null) | User;
   customerEmail?: string | null;
-  order?: (string | null) | Order;
-  cart?: (string | null) | Cart;
+  order?: (number | null) | Order;
+  cart?: (number | null) | Cart;
   amount?: number | null;
   currency?: 'USD' | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Meet-ups where customers can collect and pay for their order in person.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  /**
+   * Events in the past are never offered at checkout.
+   */
+  startsAt: string;
+  endsAt?: string | null;
+  /**
+   * Shown to the customer at checkout and in their confirmation email.
+   */
+  location: string;
+  /**
+   * Optional full address, included in the confirmation email.
+   */
+  address?: string | null;
+  /**
+   * Optional note shown under the event at checkout.
+   */
+  description?: string | null;
+  /**
+   * Turn off to stop offering this event at checkout without unpublishing it — useful once you have stopped taking collections for it.
+   */
+  acceptOrders?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "carts".
  */
 export interface Cart {
-  id: string;
+  id: number;
   items?:
     | {
-        product?: (string | null) | Product;
-        variant?: (string | null) | Variant;
+        product?: (number | null) | Product;
+        variant?: (number | null) | Variant;
         quantity: number;
         id?: string | null;
       }[]
     | null;
   secret?: string | null;
-  customer?: (string | null) | User;
+  customer?: (number | null) | User;
   purchasedAt?: string | null;
   status?: ('active' | 'purchased' | 'abandoned') | null;
   subtotal?: number | null;
@@ -964,8 +1172,8 @@ export interface Cart {
  * via the `definition` "addresses".
  */
 export interface Address {
-  id: string;
-  customer?: (string | null) | User;
+  id: number;
+  customer?: (number | null) | User;
   title?: string | null;
   firstName?: string | null;
   lastName?: string | null;
@@ -1025,8 +1233,8 @@ export interface Address {
  * via the `definition` "form-submissions".
  */
 export interface FormSubmission {
-  id: string;
-  form: string | Form;
+  id: number;
+  form: number | Form;
   submissionData?:
     | {
         field: string;
@@ -1042,7 +1250,7 @@ export interface FormSubmission {
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -1059,68 +1267,72 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'pages';
-        value: string | Page;
+        value: number | Page;
       } | null)
     | ({
         relationTo: 'categories';
-        value: string | Category;
+        value: number | Category;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
       } | null)
     | ({
         relationTo: 'forms';
-        value: string | Form;
+        value: number | Form;
       } | null)
     | ({
         relationTo: 'form-submissions';
-        value: string | FormSubmission;
+        value: number | FormSubmission;
       } | null)
     | ({
         relationTo: 'addresses';
-        value: string | Address;
+        value: number | Address;
       } | null)
     | ({
         relationTo: 'variants';
-        value: string | Variant;
+        value: number | Variant;
       } | null)
     | ({
         relationTo: 'variantTypes';
-        value: string | VariantType;
+        value: number | VariantType;
       } | null)
     | ({
         relationTo: 'variantOptions';
-        value: string | VariantOption;
+        value: number | VariantOption;
       } | null)
     | ({
         relationTo: 'products';
-        value: string | Product;
+        value: number | Product;
       } | null)
     | ({
         relationTo: 'carts';
-        value: string | Cart;
+        value: number | Cart;
       } | null)
     | ({
         relationTo: 'orders';
-        value: string | Order;
+        value: number | Order;
       } | null)
     | ({
         relationTo: 'transactions';
-        value: string | Transaction;
+        value: number | Transaction;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -1130,10 +1342,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -1153,7 +1365,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -1197,6 +1409,7 @@ export interface PagesSelect<T extends boolean = true> {
     | T
     | {
         type?: T;
+        tagline?: T;
         richText?: T;
         links?:
           | T
@@ -1220,6 +1433,7 @@ export interface PagesSelect<T extends boolean = true> {
     | {
         cta?: T | CallToActionBlockSelect<T>;
         content?: T | ContentBlockSelect<T>;
+        features?: T | FeaturesBlockSelect<T>;
         mediaBlock?: T | MediaBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
         carousel?: T | CarouselBlockSelect<T>;
@@ -1285,6 +1499,24 @@ export interface ContentBlockSelect<T extends boolean = true> {
               label?: T;
               appearance?: T;
             };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FeaturesBlock_select".
+ */
+export interface FeaturesBlockSelect<T extends boolean = true> {
+  heading?: T;
+  subtitle?: T;
+  features?:
+    | T
+    | {
+        icon?: T;
+        title?: T;
+        description?: T;
         id?: T;
       };
   id?: T;
@@ -1366,6 +1598,8 @@ export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
   generateSlug?: T;
   slug?: T;
+  icon?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1387,6 +1621,24 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  generateSlug?: T;
+  slug?: T;
+  startsAt?: T;
+  endsAt?: T;
+  location?: T;
+  address?: T;
+  description?: T;
+  acceptOrders?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1604,6 +1856,24 @@ export interface VariantOptionsSelect<T extends boolean = true> {
  */
 export interface ProductsSelect<T extends boolean = true> {
   title?: T;
+  merchandising?:
+    | T
+    | {
+        shortDescription?: T;
+        badge?:
+          | T
+          | {
+              label?: T;
+              tone?: T;
+            };
+        highlights?:
+          | T
+          | {
+              icon?: T;
+              label?: T;
+              id?: T;
+            };
+      };
   description?: T;
   gallery?:
     | T
@@ -1634,6 +1904,7 @@ export interface ProductsSelect<T extends boolean = true> {
         description?: T;
       };
   categories?: T;
+  featured?: T;
   generateSlug?: T;
   slug?: T;
   updatedAt?: T;
@@ -1697,6 +1968,11 @@ export interface OrdersSelect<T extends boolean = true> {
   status?: T;
   amount?: T;
   currency?: T;
+  deliveryFee?: T;
+  paymentReference?: T;
+  paymentReceipt?: T;
+  paymentVerified?: T;
+  event?: T;
   accessToken?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1720,6 +1996,30 @@ export interface TransactionsSelect<T extends boolean = true> {
     | {
         customerID?: T;
         paymentIntentID?: T;
+      };
+  bankTransfer?:
+    | T
+    | {
+        reference?: T;
+        paymentVerified?: T;
+        verifiedAt?: T;
+      };
+  payAtEvent?:
+    | T
+    | {
+        reference?: T;
+        event?: T;
+        paymentCollected?: T;
+        collectedAt?: T;
+      };
+  cod?:
+    | T
+    | {
+        orderID?: T;
+        validationStatus?: T;
+        deliveryStatus?: T;
+        paymentCollected?: T;
+        collectionDate?: T;
       };
   billingAddress?:
     | T
@@ -1791,7 +2091,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  * via the `definition` "header".
  */
 export interface Header {
-  id: string;
+  id: number;
   navItems?:
     | {
         link: {
@@ -1799,7 +2099,7 @@ export interface Header {
           newTab?: boolean | null;
           reference?: {
             relationTo: 'pages';
-            value: string | Page;
+            value: number | Page;
           } | null;
           url?: string | null;
           label: string;
@@ -1815,7 +2115,7 @@ export interface Header {
  * via the `definition` "footer".
  */
 export interface Footer {
-  id: string;
+  id: number;
   navItems?:
     | {
         link: {
@@ -1823,7 +2123,7 @@ export interface Footer {
           newTab?: boolean | null;
           reference?: {
             relationTo: 'pages';
-            value: string | Page;
+            value: number | Page;
           } | null;
           url?: string | null;
           label: string;
@@ -1831,6 +2131,408 @@ export interface Footer {
         id?: string | null;
       }[]
     | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Controls the layout, copy and merchandising of the /shop browse experience.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shopSettings".
+ */
+export interface ShopSetting {
+  id: number;
+  hero?: {
+    enabled?: boolean | null;
+    /**
+     * Small uppercase line above the headline.
+     */
+    eyebrow?: string | null;
+    colorway?: ('azure' | 'midnight' | 'cranberry') | null;
+    headline?: string | null;
+    /**
+     * Rendered in gold with an underline swash.
+     */
+    headlineAccent?: string | null;
+    intro?: string | null;
+    /**
+     * Sits behind the gradient at low opacity. Landscape works best.
+     */
+    backgroundImage?: (number | null) | Media;
+    /**
+     * Trust pills shown under the intro.
+     */
+    badges?:
+      | {
+          /**
+           * Rendered as an SVG icon on the storefront.
+           */
+          icon?:
+            | (
+                | 'truck'
+                | 'ship'
+                | 'plane'
+                | 'globe'
+                | 'mapPin'
+                | 'shield'
+                | 'badgeCheck'
+                | 'lock'
+                | 'creditCard'
+                | 'refresh'
+                | 'clock'
+                | 'users'
+                | 'handshake'
+                | 'heart'
+                | 'sparkles'
+                | 'flame'
+                | 'star'
+                | 'award'
+                | 'crown'
+                | 'gift'
+                | 'tag'
+                | 'percent'
+                | 'package'
+                | 'shirt'
+                | 'leaf'
+                | 'recycle'
+                | 'graduationCap'
+                | 'book'
+              )
+            | null;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Optional impact figures shown beside the headline on desktop.
+     */
+    stats?:
+      | {
+          value: string;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  browse?: {
+    columns?: ('3' | '4') | null;
+    cardStyle?: ('elevated' | 'bordered' | 'editorial') | null;
+    defaultSort?: ('title' | '-createdAt' | 'priceInUSD' | '-priceInUSD') | null;
+    showSearch?: boolean | null;
+    showSortControl?: boolean | null;
+    showCategoryFilter?: boolean | null;
+    showCategoryCounts?: boolean | null;
+    /**
+     * Add-to-cart button directly on the product card.
+     */
+    enableQuickAdd?: boolean | null;
+    /**
+     * Surfaces "Only 3 left" / "Sold out" on cards.
+     */
+    showStockHints?: boolean | null;
+  };
+  promo?: {
+    enabled?: boolean | null;
+    /**
+     * Grid slot to occupy. 3 = after the second product.
+     */
+    position?: number | null;
+    span?: ('1' | '2') | null;
+    colorway?: ('cranberry' | 'gold' | 'azure') | null;
+    eyebrow?: string | null;
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Optional. Blended into the tile background.
+     */
+    image?: (number | null) | Media;
+    link?: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?: {
+        relationTo: 'pages';
+        value: number | Page;
+      } | null;
+      url?: string | null;
+      label: string;
+    };
+  };
+  emptyState?: {
+    /**
+     * Rendered as an SVG icon on the storefront.
+     */
+    icon?:
+      | (
+          | 'truck'
+          | 'ship'
+          | 'plane'
+          | 'globe'
+          | 'mapPin'
+          | 'shield'
+          | 'badgeCheck'
+          | 'lock'
+          | 'creditCard'
+          | 'refresh'
+          | 'clock'
+          | 'users'
+          | 'handshake'
+          | 'heart'
+          | 'sparkles'
+          | 'flame'
+          | 'star'
+          | 'award'
+          | 'crown'
+          | 'gift'
+          | 'tag'
+          | 'percent'
+          | 'package'
+          | 'shirt'
+          | 'leaf'
+          | 'recycle'
+          | 'graduationCap'
+          | 'book'
+        )
+      | null;
+    heading?: string | null;
+    body?: string | null;
+  };
+  belowGrid?: (FeaturesBlock | CallToActionBlock | ContentBlock | CarouselBlock | MediaBlock | BannerBlock)[] | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Turn payment methods on or off and control how they appear at checkout.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "paymentSettings".
+ */
+export interface PaymentSetting {
+  id: number;
+  heading?: string | null;
+  /**
+   * Online card payment handled by Stripe.
+   */
+  stripe?: {
+    enabled?: boolean | null;
+    label?: string | null;
+    /**
+     * Lower numbers appear first.
+     */
+    order?: number | null;
+    description?: string | null;
+  };
+  /**
+   * Customer transfers the money themselves, then uploads a receipt. The bank details below are shown at checkout and repeated in their confirmation email.
+   */
+  bankTransfer?: {
+    enabled?: boolean | null;
+    label?: string | null;
+    /**
+     * Lower numbers appear first.
+     */
+    order?: number | null;
+    description?: string | null;
+    bankDetails?: {
+      accountHolder?: string | null;
+      bankName?: string | null;
+      iban?: string | null;
+      swift?: string | null;
+      /**
+       * Extra guidance shown under the bank details, e.g. how long verification takes.
+       */
+      instructions?: string | null;
+    };
+    /**
+     * Prompts the customer to upload proof of payment after placing the order.
+     */
+    requireReceipt?: boolean | null;
+  };
+  /**
+   * Customer pays the courier when the order arrives.
+   */
+  cod?: {
+    enabled?: boolean | null;
+    label?: string | null;
+    /**
+     * Lower numbers appear first.
+     */
+    order?: number | null;
+    description?: string | null;
+  };
+  /**
+   * Order is placed immediately and paid in person at an event the customer selects. Requires at least one published, upcoming event that is accepting orders.
+   */
+  payAtEvent?: {
+    enabled?: boolean | null;
+    label?: string | null;
+    /**
+     * Lower numbers appear first.
+     */
+    order?: number | null;
+    description?: string | null;
+    eventFieldLabel?: string | null;
+    /**
+     * Shown when no upcoming events are available.
+     */
+    noEventsMessage?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Delivery charges added to the order total. Orders collected at an event are never charged delivery.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deliverySettings".
+ */
+export interface DeliverySetting {
+  id: number;
+  /**
+   * When off, no delivery charge is added to any order.
+   */
+  enabled?: boolean | null;
+  label?: string | null;
+  /**
+   * In cents — 500 = $5.00. Used when no country rate matches.
+   */
+  flatFee?: number | null;
+  /**
+   * In cents. Orders at or above this amount get free delivery. Leave at 0 to always charge.
+   */
+  freeOver?: number | null;
+  /**
+   * Per-country overrides. The first row matching the delivery address wins; otherwise the standard fee applies.
+   */
+  rates?:
+    | {
+        /**
+         * ISO country codes, comma separated. e.g. FR, ES, IT
+         */
+        countries: string;
+        /**
+         * In cents.
+         */
+        fee: number;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Optional line shown under the delivery charge at checkout.
+   */
+  notice?: string | null;
+  /**
+   * Shown instead of a delivery charge when collecting at an event.
+   */
+  eventNotice?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * SMTP delivery settings and the content of every transactional email.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings".
+ */
+export interface EmailSetting {
+  id: number;
+  delivery?: {
+    /**
+     * When off, emails are logged to the server console instead of being sent. Useful for local development.
+     */
+    enabled?: boolean | null;
+    host?: string | null;
+    /**
+     * 465 for SSL, 587 for STARTTLS.
+     */
+    port?: number | null;
+    /**
+     * On for port 465, off for 587.
+     */
+    secure?: boolean | null;
+    /**
+     * Your full Gmail address, e.g. shop@yourdomain.com
+     */
+    username?: string | null;
+    /**
+     * Gmail App Password (16 characters). Stored in your database — treat it like any other secret.
+     */
+    password?: string | null;
+    fromName?: string | null;
+    /**
+     * Gmail will rewrite this to your account address unless it is a verified alias.
+     */
+    fromAddress?: string | null;
+    /**
+     * Optional. Where customer replies should go.
+     */
+    replyTo?: string | null;
+    /**
+     * Save your settings first, then send a test email to this address to verify the credentials work.
+     */
+    testRecipient?: string | null;
+  };
+  branding?: {
+    /**
+     * Shown at the top of every email. Use a PNG with a transparent or light background — email clients do not support dark mode reliably.
+     */
+    logo?: (number | null) | Media;
+    headerColor?: ('azure' | 'cranberry' | 'midnight') | null;
+    buttonColor?: ('azure' | 'cranberry' | 'gold') | null;
+    footerText?: string | null;
+    /**
+     * Shown in the footer so customers know where to ask for help.
+     */
+    supportEmail?: string | null;
+  };
+  orderConfirmation?: {
+    enabled?: boolean | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    subject?: string | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    heading?: string | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    intro?: string | null;
+    showItems?: boolean | null;
+    /**
+     * Added only when the customer chose to pay at an event. Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}, {{eventName}}, {{eventDate}}, {{eventLocation}}
+     */
+    eventNotice?: string | null;
+    /**
+     * Added only for bank transfer orders. The bank details come from Payment Settings. Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}, {{paymentReference}}, {{bankDetails}}
+     */
+    bankTransferNotice?: string | null;
+    /**
+     * Leave empty to hide the button.
+     */
+    buttonLabel?: string | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    outro?: string | null;
+  };
+  orderAccess?: {
+    enabled?: boolean | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    subject?: string | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    heading?: string | null;
+    /**
+     * Available placeholders: {{orderId}}, {{customerName}}, {{orderTotal}}, {{orderUrl}}, {{orderDate}}, {{siteName}}
+     */
+    intro?: string | null;
+    buttonLabel?: string | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1875,6 +2577,222 @@ export interface FooterSelect<T extends boolean = true> {
               label?: T;
             };
         id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shopSettings_select".
+ */
+export interface ShopSettingsSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        enabled?: T;
+        eyebrow?: T;
+        colorway?: T;
+        headline?: T;
+        headlineAccent?: T;
+        intro?: T;
+        backgroundImage?: T;
+        badges?:
+          | T
+          | {
+              icon?: T;
+              label?: T;
+              id?: T;
+            };
+        stats?:
+          | T
+          | {
+              value?: T;
+              label?: T;
+              id?: T;
+            };
+      };
+  browse?:
+    | T
+    | {
+        columns?: T;
+        cardStyle?: T;
+        defaultSort?: T;
+        showSearch?: T;
+        showSortControl?: T;
+        showCategoryFilter?: T;
+        showCategoryCounts?: T;
+        enableQuickAdd?: T;
+        showStockHints?: T;
+      };
+  promo?:
+    | T
+    | {
+        enabled?: T;
+        position?: T;
+        span?: T;
+        colorway?: T;
+        eyebrow?: T;
+        title?: T;
+        description?: T;
+        image?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+      };
+  emptyState?:
+    | T
+    | {
+        icon?: T;
+        heading?: T;
+        body?: T;
+      };
+  belowGrid?:
+    | T
+    | {
+        features?: T | FeaturesBlockSelect<T>;
+        cta?: T | CallToActionBlockSelect<T>;
+        content?: T | ContentBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        mediaBlock?: T | MediaBlockSelect<T>;
+        banner?: T | BannerBlockSelect<T>;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "paymentSettings_select".
+ */
+export interface PaymentSettingsSelect<T extends boolean = true> {
+  heading?: T;
+  stripe?:
+    | T
+    | {
+        enabled?: T;
+        label?: T;
+        order?: T;
+        description?: T;
+      };
+  bankTransfer?:
+    | T
+    | {
+        enabled?: T;
+        label?: T;
+        order?: T;
+        description?: T;
+        bankDetails?:
+          | T
+          | {
+              accountHolder?: T;
+              bankName?: T;
+              iban?: T;
+              swift?: T;
+              instructions?: T;
+            };
+        requireReceipt?: T;
+      };
+  cod?:
+    | T
+    | {
+        enabled?: T;
+        label?: T;
+        order?: T;
+        description?: T;
+      };
+  payAtEvent?:
+    | T
+    | {
+        enabled?: T;
+        label?: T;
+        order?: T;
+        description?: T;
+        eventFieldLabel?: T;
+        noEventsMessage?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deliverySettings_select".
+ */
+export interface DeliverySettingsSelect<T extends boolean = true> {
+  enabled?: T;
+  label?: T;
+  flatFee?: T;
+  freeOver?: T;
+  rates?:
+    | T
+    | {
+        countries?: T;
+        fee?: T;
+        label?: T;
+        id?: T;
+      };
+  notice?: T;
+  eventNotice?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings_select".
+ */
+export interface EmailSettingsSelect<T extends boolean = true> {
+  delivery?:
+    | T
+    | {
+        enabled?: T;
+        host?: T;
+        port?: T;
+        secure?: T;
+        username?: T;
+        password?: T;
+        fromName?: T;
+        fromAddress?: T;
+        replyTo?: T;
+        testRecipient?: T;
+      };
+  branding?:
+    | T
+    | {
+        logo?: T;
+        headerColor?: T;
+        buttonColor?: T;
+        footerText?: T;
+        supportEmail?: T;
+      };
+  orderConfirmation?:
+    | T
+    | {
+        enabled?: T;
+        subject?: T;
+        heading?: T;
+        intro?: T;
+        showItems?: T;
+        eventNotice?: T;
+        bankTransferNotice?: T;
+        buttonLabel?: T;
+        outro?: T;
+      };
+  orderAccess?:
+    | T
+    | {
+        enabled?: T;
+        subject?: T;
+        heading?: T;
+        intro?: T;
+        buttonLabel?: T;
       };
   updatedAt?: T;
   createdAt?: T;

@@ -1,0 +1,19 @@
+/* Rotaract Méditerranéen — Payload Admin Theme Overrides */
+
+:root {
+  --theme-success-500: oklch(55% 0.16 145deg);
+  --theme-error-500: oklch(55% 0.2 25deg);
+  --theme-warning-500: oklch(75% 0.15 75deg);
+}
+
+/* Primary action buttons — cranberry */
+.btn--style-primary {
+  background-color: #d41367 !important;
+  border-color: #d41367 !important;
+}
+
+/* Admin nav active/hover links — cranberry */
+.nav__link:hover,
+.nav__link--active {
+  color: #d41367 !important;
+}
